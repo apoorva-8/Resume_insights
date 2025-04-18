@@ -1,10 +1,14 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
 import tempfile
 from resume_analyzer import ResumeAnalyzer
 
 app = Flask(__name__)
+CORS(app)
+
 analyzer = ResumeAnalyzer()
+
 
 @app.route('/', methods=['GET'])
 def home():
