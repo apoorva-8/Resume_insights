@@ -6,6 +6,16 @@ from resume_analyzer import ResumeAnalyzer
 app = Flask(__name__)
 analyzer = ResumeAnalyzer()
 
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "status": "online",
+        "message": "Resume Analyzer API is running",
+        "endpoints": {
+            "analyze": "/analyze - POST request with 'resume' file and optional 'target_industry'"
+        }
+    })
+
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"})
