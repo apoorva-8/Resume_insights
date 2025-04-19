@@ -1,102 +1,88 @@
-/* static/css/styles.css */
 body {
     background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .card {
-    border-radius: 10px;
+    border-radius: 15px;
     overflow: hidden;
 }
 
 .card-header {
-    font-weight: 600;
+    border-bottom: none;
 }
 
 .score-circle {
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    background: conic-gradient(var(--score-color) var(--score-percent), #e9ecef var(--score-percent));
-    margin: 0 auto;
+    background: conic-gradient(
+        #198754 0% calc(var(--score) * 1%),
+        #e9ecef calc(var(--score) * 1%) 100%
+    );
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 0 auto;
     position: relative;
 }
 
 .score-circle::before {
     content: '';
     position: absolute;
-    width: 120px;
-    height: 120px;
-    background: white;
+    width: 130px;
+    height: 130px;
     border-radius: 50%;
+    background-color: white;
 }
 
 .score-text {
     position: relative;
-    z-index: 2;
-    font-size: 2rem;
+    font-size: 32px;
     font-weight: bold;
+    color: #198754;
+    z-index: 1;
 }
 
-.priority-tag {
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
+.list-group-item {
+    border-left: none;
+    border-right: none;
 }
 
-.priority-High {
-    background-color: #dc3545;
-    color: white;
+#loading-section {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
-.priority-Medium {
-    background-color: #fd7e14;
-    color: white;
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
 }
 
-.priority-Low {
-    background-color: #6c757d;
-    color: white;
-}
-
-.keyword-pill {
-    display: inline-block;
-    background-color: #e2f0fd;
-    color: #0d6efd;
-    padding: 5px 10px;
-    border-radius: 20px;
-    margin: 3px;
-    font-size: 0.9rem;
-}
-
-.section-badge {
-    display: inline-block;
-    background-color: #e9ecef;
-    padding: 3px 8px;
-    border-radius: 4px;
-    margin: 2px;
-    font-size: 0.85rem;
-}
-
-.recommendation-item {
-    border-left: 4px solid;
+#recommendations .alert, #formatting-issues .alert {
+    margin-bottom: 8px;
     padding: 10px 15px;
-    margin-bottom: 15px;
-    background-color: #f8f9fb;
-    border-radius: 0 4px 4px 0;
 }
 
-.High {
-    border-left-color: #dc3545;
+canvas {
+    max-height: 300px;
 }
 
-.Medium {
-    border-left-color: #fd7e14;
-}
-
-.Low {
-    border-left-color: #6c757d;
+@media (max-width: 768px) {
+    .score-circle {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .score-circle::before {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .score-text {
+        font-size: 24px;
+    }
 }

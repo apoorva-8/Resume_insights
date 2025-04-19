@@ -1,239 +1,225 @@
-// static/js/main.js
-document.addEventListener('DOMContentLoaded', function() {
-    const resumeForm = document.getElementById('resume-form');
-    const uploadSection = document.getElementById('upload-section');
-    const loadingSection = document.getElementById('loading-section');
-    const resultsSection = document.getElementById('results-section');
-    const backButton = document.getElementById('back-button');
-    
-    let factorScoresChart = null;
+// Constants
+const API_URL = 'https://resume-insights.onrender.com';
 
-    // Form submission handler
-    resumeForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Show loading
-        uploadSection.classList.add('d-none');
-        loadingSection.classList.remove('d-none');
-        
-        // Get form data
-        const formData = new FormData(resumeForm);
-        
-        // Send request to backend
-        fetch('/analyze', {
+// DOM Elements
+const resumeForm = document.getElementById('resume-form');
+const uploadSection = document.getElementById('upload-section');
+const loadingSection = document.getElementById('loading-section');
+const resultsSection = document.getElementById('results-section');
+const backButton = document.getElementById('back-button');
+
+// Event Listeners
+resumeForm.addEventListener('submit', handleFormSubmit);
+backButton.addEventListener('submit', resetForm);
+
+// Handle form submission
+async function handleFormSubmit(event) {
+    event.preventDefault();
+    
+    // Show loading screen
+    uploadSection.classList.add('d-none');
+    loadingSection.classList.remove('d-none');
+    
+    // Get form data
+    const formData = new FormData(resumeForm);
+    
+    try {
+        // Send data to API
+        const response = await fetch(`${API_URL}/analyze`, {
             method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Server responded with an error');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            displayResults(data);
-        })
-        .catch(error => {
-            alert('Error: ' + error.message);
-            // Show upload section again
-            loadingSection.classList.add('d-none');
-            uploadSection.classList.remove('d-none');
+            body: formData,
         });
-    });
-    
-    // Back button handler
-    backButton.addEventListener('click', function() {
-        resultsSection.classList.add('d-none');
-        uploadSection.classList.remove('d-none');
-        resumeForm.reset();
         
-        // Destroy chart to prevent memory leaks
-        if (factorScoresChart) {
-            factorScoresChart.destroy();
-            factorScoresChart = null;
+        if (!response.ok) {
+            throw new Error('Failed to analyze resume');
         }
-    });
-    
-    // Function to display results
-    function displayResults(data) {
-        // Hide loading
+        
+        const data = await response.json();
+        
+        // Display results
+        displayResults(data);
+        
+        // Hide loading, show results
         loadingSection.classList.add('d-none');
         resultsSection.classList.remove('d-none');
         
-        // Update ATS score
-        const atsScore = document.getElementById('ats-score');
-        atsScore.textContent = data.ats_score + '%';
+    } catch (error) {
+        console.error('Error:', error);
+        alert('There was an error analyzing your resume. Please try again.');
         
-        // Set score circle color based on score
-        const scoreCircle = document.querySelector('.score-circle');
-        let scoreColor;
-        
-        if (data.ats_score >= 80) {
-            scoreColor = '#28a745'; // Green for high score
-        } else if (data.ats_score >= 60) {
-            scoreColor = '#ffc107'; // Yellow for medium score
-        } else {
-            scoreColor = '#dc3545'; // Red for low score
-        }
-        
-        scoreCircle.style.setProperty('--score-color', scoreColor);
-        scoreCircle.style.setProperty('--score-percent', data.ats_score + '%');
-        
-        // Update metrics
-        document.getElementById('word-count').textContent = data.metrics.wordCount;
-        document.getElementById('action-verb-count').textContent = data.metrics.actionVerbCount;
-        document.getElementById('weak-phrase-count').textContent = data.metrics.weakPhraseCount;
-        
-        // Update sections found
-        const sectionsFound = document.getElementById('sections-found');
-        sectionsFound.innerHTML = '';
-        if (data.metrics.sectionsFound && data.metrics.sectionsFound.length > 0) {
-            data.metrics.sectionsFound.forEach(section => {
-                const badge = document.createElement('span');
-                badge.className = 'section-badge';
-                badge.textContent = section.charAt(0).toUpperCase() + section.slice(1);
-                sectionsFound.appendChild(badge);
-            });
-        } else {
-            sectionsFound.textContent = 'No standard sections detected';
-        }
-        
-        // Update formatting issues
-        const formattingIssues = document.getElementById('formatting-issues');
-        formattingIssues.innerHTML = '';
-        if (data.metrics.formattingIssues && data.metrics.formattingIssues.length > 0) {
-            const issuesList = document.createElement('div');
-            issuesList.className = 'text-danger';
-            data.metrics.formattingIssues.forEach(issue => {
-                const issueItem = document.createElement('div');
-                issueItem.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${issue}`;
-                issuesList.appendChild(issueItem);
-            });
-            formattingIssues.appendChild(issuesList);
-        } else {
-            formattingIssues.innerHTML = '<span class="text-success">No formatting issues detected</span>';
-        }
-        
-        // Update recommendations
-        const recommendationsDiv = document.getElementById('recommendations');
-        recommendationsDiv.innerHTML = '';
-        
-        if (data.recommendations && data.recommendations.length > 0) {
-            data.recommendations.forEach(rec => {
-                const recItem = document.createElement('div');
-                recItem.className = `recommendation-item ${rec.priority}`;
-                
-                recItem.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center">
-                        <strong>${rec.category}</strong>
-                        <span class="priority-tag priority-${rec.priority}">${rec.priority}</span>
-                    </div>
-                    <p class="mb-0 mt-1">${rec.recommendation}</p>
-                `;
-                
-                recommendationsDiv.appendChild(recItem);
-            });
-        } else {
-            recommendationsDiv.textContent = 'No recommendations';
-        }
-        
-        // Update keyword analysis
-        const keywordAnalysis = document.getElementById('keyword-analysis');
-        keywordAnalysis.innerHTML = '';
-        
-        if (data.keywordAnalysis && data.keywordAnalysis.industryKeywords) {
-            const industriesDiv = document.createElement('div');
-            
-            Object.entries(data.keywordAnalysis.industryKeywords).forEach(([industry, keywords]) => {
-                const industryDiv = document.createElement('div');
-                industryDiv.className = 'mb-3';
-                
-                const industryTitle = document.createElement('h5');
-                industryTitle.textContent = industry.replace('_', ' ').charAt(0).toUpperCase() + industry.replace('_', ' ').slice(1);
-                industryDiv.appendChild(industryTitle);
-                
-                const keywordsDiv = document.createElement('div');
-                keywordsDiv.className = 'mt-2';
-                
-                keywords.forEach(keyword => {
-                    const keywordPill = document.createElement('span');
-                    keywordPill.className = 'keyword-pill';
-                    keywordPill.textContent = keyword;
-                    keywordsDiv.appendChild(keywordPill);
-                });
-                
-                industryDiv.appendChild(keywordsDiv);
-                industriesDiv.appendChild(industryDiv);
-            });
-            
-            keywordAnalysis.appendChild(industriesDiv);
-        } else {
-            keywordAnalysis.textContent = 'No industry keywords detected';
-        }
-        
-        // Create factor scores chart
-        if (data.factorScores) {
-            const ctx = document.getElementById('factorScoresChart').getContext('2d');
-            
-            // Format factor names for display
-            const labels = Object.keys(data.factorScores).map(factor => 
-                factor.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-            );
-            
-            // Convert scores to percentages
-            const scores = Object.values(data.factorScores).map(score => Math.round(score * 100));
-            
-            // Destroy existing chart if it exists
-            if (factorScoresChart) {
-                factorScoresChart.destroy();
-            }
-            
-            // Create new chart
-            factorScoresChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Factor Score (%)',
-                        data: scores,
-                        backgroundColor: [
-                            'rgba(54, 162, 235, 0.7)',
-                            'rgba(75, 192, 192, 0.7)',
-                            'rgba(255, 206, 86, 0.7)',
-                            'rgba(153, 102, 255, 0.7)',
-                            'rgba(255, 159, 64, 0.7)',
-                            'rgba(255, 99, 132, 0.7)',
-                            'rgba(199, 199, 199, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(199, 199, 199, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
+        // Return to upload screen
+        loadingSection.classList.add('d-none');
+        uploadSection.classList.remove('d-none');
     }
-});
+}
+
+// Display analysis results
+function displayResults(data) {
+    // Update ATS score
+    document.getElementById('ats-score').textContent = `${data.ats_score}%`;
+    
+    // Update metrics
+    document.getElementById('word-count').textContent = data.word_count;
+    document.getElementById('action-verb-count').textContent = data.action_verb_count;
+    document.getElementById('weak-phrase-count').textContent = data.weak_phrase_count;
+    
+    // Update sections found
+    const sectionsFoundEl = document.getElementById('sections-found');
+    sectionsFoundEl.innerHTML = '';
+    
+    data.sections_found.forEach(section => {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-success me-1 mb-1';
+        badge.textContent = section;
+        sectionsFoundEl.appendChild(badge);
+    });
+    
+    // Update formatting issues
+    const formattingIssuesEl = document.getElementById('formatting-issues');
+    formattingIssuesEl.innerHTML = '';
+    
+    if (data.formatting_issues.length === 0) {
+        const noIssues = document.createElement('p');
+        noIssues.className = 'text-success mb-0';
+        noIssues.textContent = 'No formatting issues detected';
+        formattingIssuesEl.appendChild(noIssues);
+    } else {
+        data.formatting_issues.forEach(issue => {
+            const issueItem = document.createElement('div');
+            issueItem.className = 'alert alert-warning py-1 px-2 mb-1';
+            issueItem.textContent = issue;
+            formattingIssuesEl.appendChild(issueItem);
+        });
+    }
+    
+    // Update recommendations
+    const recommendationsEl = document.getElementById('recommendations');
+    recommendationsEl.innerHTML = '';
+    
+    data.recommendations.forEach(rec => {
+        const recItem = document.createElement('div');
+        recItem.className = 'alert alert-warning mb-2';
+        recItem.textContent = rec;
+        recommendationsEl.appendChild(recItem);
+    });
+    
+    // Update keyword analysis
+    const keywordAnalysisEl = document.getElementById('keyword-analysis');
+    keywordAnalysisEl.innerHTML = '';
+    
+    if (data.job_description_match) {
+        // Create matched keywords section
+        const matchedKeywords = document.createElement('div');
+        matchedKeywords.className = 'mb-3';
+        
+        const matchedTitle = document.createElement('h5');
+        matchedTitle.textContent = 'Matched Keywords';
+        matchedKeywords.appendChild(matchedTitle);
+        
+        const matchedContainer = document.createElement('div');
+        matchedContainer.className = 'd-flex flex-wrap';
+        
+        data.job_description_match.matched_keywords.forEach(keyword => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-success me-1 mb-1';
+            badge.textContent = keyword;
+            matchedContainer.appendChild(badge);
+        });
+        
+        matchedKeywords.appendChild(matchedContainer);
+        keywordAnalysisEl.appendChild(matchedKeywords);
+        
+        // Create missing keywords section
+        const missingKeywords = document.createElement('div');
+        missingKeywords.className = 'mb-3';
+        
+        const missingTitle = document.createElement('h5');
+        missingTitle.textContent = 'Missing Keywords';
+        missingKeywords.appendChild(missingTitle);
+        
+        const missingContainer = document.createElement('div');
+        missingContainer.className = 'd-flex flex-wrap';
+        
+        data.job_description_match.missing_keywords.forEach(keyword => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-danger me-1 mb-1';
+            badge.textContent = keyword;
+            missingContainer.appendChild(badge);
+        });
+        
+        missingKeywords.appendChild(missingContainer);
+        keywordAnalysisEl.appendChild(missingKeywords);
+        
+        // Add match percentage
+        const matchPercentage = document.createElement('p');
+        matchPercentage.className = 'mt-2';
+        matchPercentage.innerHTML = `<strong>Match Rate:</strong> ${data.job_description_match.match_percentage}%`;
+        keywordAnalysisEl.appendChild(matchPercentage);
+    } else {
+        const noJobDesc = document.createElement('p');
+        noJobDesc.textContent = 'No job description provided for keyword matching.';
+        keywordAnalysisEl.appendChild(noJobDesc);
+    }
+    
+    // Create factor scores chart
+    createFactorScoresChart(data.factor_scores);
+}
+
+// Create radar chart for factor scores
+function createFactorScoresChart(factorScores) {
+    const ctx = document.getElementById('factorScoresChart').getContext('2d');
+    
+    // Format data for chart
+    const labels = Object.keys(factorScores);
+    const scores = Object.values(factorScores);
+    
+    // Destroy existing chart if it exists
+    if (window.factorChart) {
+        window.factorChart.destroy();
+    }
+    
+    // Create new chart
+    window.factorChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Factor Scores',
+                data: scores,
+                fill: true,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgb(54, 162, 235)',
+                pointBackgroundColor: 'rgb(54, 162, 235)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(54, 162, 235)'
+            }]
+        },
+        options: {
+            elements: {
+                line: {
+                    borderWidth: 3
+                }
+            },
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                }
+            }
+        }
+    });
+}
+
+// Reset the form to analyze another resume
+function resetForm() {
+    // Hide results, show upload form
+    resultsSection.classList.add('d-none');
+    uploadSection.classList.remove('d-none');
+    
+    // Reset form fields
+    resumeForm.reset();
+}
