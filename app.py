@@ -13,7 +13,8 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 CORS(app, resources={r"/*": {"origins": [
     "https://campusconnectkrmu.onrender.com",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://127.0.0.1:5500"  
 ]}})
 
 # Ensure upload directory exists
