@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h1 class="text-center">ATS Resume Analyzer</h1>
+                    </div>
+                    <div class="card-body">
+                        <div id="upload-section">
+                            <form id="resume-form" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="resume" class="form-label">Upload your resume (PDF only)</label>
+                                    <input class="form-control" type="file" id="resume" name="resume" accept=".pdf" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="industry" class="form-label">Target Industry (Optional)</label>
+                                    <select class="form-select" id="industry" name="industry">
+                                        <option value="">Select an industry</option>
+                                        <option value="software_development">Software Development</option>
+                                        <option value="data_science">Data Science</option>
+                                        <option value="marketing">Marketing</option>
+                                        <option value="finance">Finance</option>
+                                        <option value="project_management">Project Management</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="job_description" class="form-label">Job Description (Optional)</label>
+                                    <textarea class="form-control" id="job_description" name="job_description" rows="4" placeholder="Paste the job description here for better keyword matching"></textarea>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">Analyze Resume</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div id="loading-section" class="text-center py-5 d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3">Analyzing your resume...</p>
+                        </div>
+                        
+                        <div id="results-section" class="d-none">
+                            <div class="text-center mb-4">
+                                <h2>Your ATS Score</h2>
+                                <div class="score-circle">
+                                    <div class="score-text" id="ats-score">0%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-secondary text-white">
+                                            Resume Metrics
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Word Count
+                                                    <span class="badge bg-primary rounded-pill" id="word-count">0</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Action Verbs
+                                                    <span class="badge bg-primary rounded-pill" id="action-verb-count">0</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    Weak Phrases
+                                                    <span class="badge bg-danger rounded-pill" id="weak-phrase-count">0</span>
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Sections Found</span>
+                                                    </div>
+                                                    <div id="sections-found" class="mt-2"></div>
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>ATS Formatting Issues</span>
+                                                    </div>
+                                                    <div id="formatting-issues" class="mt-2"></div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-secondary text-white">
+                                            Factor Scores
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="factorScoresChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-danger text-white">
+                                    ATS Improvement Recommendations
+                                </div>
+                                <div class="card-body">
+                                    <div id="recommendations"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    Keyword Analysis
+                                </div>
+                                <div class="card-body">
+                                    <div id="keyword-analysis"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button id="back-button" class="btn btn-secondary">Analyze Another Resume</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
