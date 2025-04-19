@@ -26,14 +26,14 @@ class ResumeAnalyzer:
         self.stopwords = set(nltk.corpus.stopwords.words('english'))
         self.lemmatizer = nltk.stem.WordNetLemmatizer()
         
-        # Keywords for different sections
+        # Keywords for different sections - expanded with more variations
         self.section_keywords = {
             'education': ['education', 'academic background', 'degree', 'university', 'college', 'school',
                          'graduation', 'diploma', 'bachelor', 'master', 'phd', 'doctorate'],
             'experience': ['experience', 'work history', 'employment', 'job', 'position', 'career',
-                          'professional background', 'work experience'],
+                          'professional background', 'work experience', 'internship', 'intern'],
             'skills': ['skills', 'abilities', 'competencies', 'expertise', 'proficiencies', 'technical skills',
-                      'soft skills', 'hard skills', 'qualifications'],
+                      'soft skills', 'hard skills', 'qualifications', 'technical'],
             'projects': ['projects', 'portfolio', 'personal projects', 'academic projects', 'project experience'],
             'achievements': ['achievements', 'accomplishments', 'awards', 'honors', 'recognitions', 'accolades'],
             'certifications': ['certifications', 'certificates', 'licenses', 'accreditations', 'credentials'],
@@ -47,7 +47,9 @@ class ResumeAnalyzer:
             'designed', 'analyzed', 'reduced', 'increased', 'negotiated', 'streamlined', 'optimized',
             'coordinated', 'launched', 'executed', 'generated', 'delivered', 'resolved', 'spearheaded',
             'produced', 'transformed', 'built', 'established', 'pioneered', 'innovated', 'administered',
-            'modernized', 'engineered', 'directed', 'accelerated', 'formulated', 'restructured'
+            'modernized', 'engineered', 'directed', 'accelerated', 'formulated', 'restructured',
+            'gained', 'partnered', 'assisted', 'maintained', 'deployed', 'contributed', 'served',
+            'volunteered', 'organized', 'ranked', 'streamlined'
         ]
         
         # Common weak phrases to avoid
@@ -60,7 +62,9 @@ class ResumeAnalyzer:
         self.industry_keywords = {
             'software_development': ['python', 'java', 'javascript', 'react', 'node', 'aws', 'cloud', 'api', 
                                     'database', 'frontend', 'backend', 'fullstack', 'devops', 'agile',
-                                    'scrum', 'ci/cd', 'testing', 'git', 'docker', 'kubernetes', 'microservices'],
+                                    'scrum', 'ci/cd', 'testing', 'git', 'docker', 'kubernetes', 'microservices',
+                                    'express', 'mongodb', 'typescript', 'next.js', 'html5', 'css3', 'redux',
+                                    'websockets', 'jwt', 'rest', 'api', 'mern', 'c++', 'algorithms'],
             'data_science': ['machine learning', 'artificial intelligence', 'data analysis', 'statistics',
                             'python', 'r', 'sql', 'pandas', 'numpy', 'tensorflow', 'pytorch', 'scikit-learn',
                             'data visualization', 'big data', 'nlp', 'computer vision', 'deep learning'],
@@ -98,7 +102,7 @@ class ResumeAnalyzer:
         return text
     
     def identify_sections(self, text):
-        """Identify different sections in the resume"""
+        """Identify different sections in the resume with improved logic"""
         sections = {}
         
         # Split text into lines
@@ -106,31 +110,98 @@ class ResumeAnalyzer:
         current_section = 'header'
         section_content = []
         
-        for line in lines:
-            line = line.strip().lower()
+        # Improved logic to detect section headers
+        for i, line in enumerate(lines):
+            line = line.strip()
             if not line:
                 continue
                 
+            line_lower = line.lower()
             section_match = None
+            
+            # Check if line contains a section header
             for section, keywords in self.section_keywords.items():
+                # Direct match for section headers (e.g., "Work Experience", "Projects", etc.)
                 for keyword in keywords:
-                    if keyword in line and len(line) < 30:  # Assume section headers are relatively short
+                    # Check for exact section header matches or with adjacent words
+                    if (re.search(r'\b' + re.escape(keyword) + r'\b', line_lower) and len(line) < 50) or \
+                       line_lower == keyword or \
+                       line_lower.startswith(keyword + ' ') or \
+                       line_lower.endswith(' ' + keyword):
                         if current_section:
                             sections[current_section] = ' '.join(section_content)
                         current_section = section
                         section_content = []
                         section_match = True
                         break
+                
+                # Special case for common resume section headers
+                if not section_match and section == 'experience' and re.search(r'\bwork\s+experience\b', line_lower):
+                    if current_section:
+                        sections[current_section] = ' '.join(section_content)
+                    current_section = 'experience'
+                    section_content = []
+                    section_match = True
+                
+                # Special case for projects
+                if not section_match and section == 'projects' and (line_lower == 'projects' or line_lower.startswith('project')):
+                    if current_section:
+                        sections[current_section] = ' '.join(section_content)
+                    current_section = 'projects'
+                    section_content = []
+                    section_match = True
+                
+                # Special case for achievements
+                if not section_match and section == 'achievements' and (line_lower == 'achievements' or line_lower.startswith('achievement')):
+                    if current_section:
+                        sections[current_section] = ' '.join(section_content)
+                    current_section = 'achievements'
+                    section_content = []
+                    section_match = True
+                
                 if section_match:
                     break
             
+            # Format detection for section headers (e.g., all caps, followed by a blank line)
+            if not section_match and i > 0 and i < len(lines) - 1:
+                if line.isupper() or (line[0].isupper() and line[-1].isupper() and len(line) < 30):
+                    line_lower = line.lower()
+                    for section, keywords in self.section_keywords.items():
+                        for keyword in keywords:
+                            if keyword in line_lower:
+                                if current_section:
+                                    sections[current_section] = ' '.join(section_content)
+                                current_section = section
+                                section_content = []
+                                section_match = True
+                                break
+                        if section_match:
+                            break
+            
             if not section_match:
                 section_content.append(line)
-                
+        
         # Add the last section
         if current_section and section_content:
             sections[current_section] = ' '.join(section_content)
-            
+        
+        # Special case for GitHub detection in projects section
+        if 'header' in sections and 'github' in sections['header'].lower():
+            if 'projects' not in sections:
+                sections['projects'] = 'GitHub project entries found in header'
+        
+        # Check for achievements/awards keywords in the entire text
+        full_text = text.lower()
+        if 'achievements' not in sections:
+            for achievement_keyword in ['ranked', 'award', 'star', 'achievement', 'volunteer', 'recognition', 'honor']:
+                if achievement_keyword in full_text:
+                    # Extract the surrounding content for context
+                    pattern = r"[^.]*\b" + re.escape(achievement_keyword) + r"\b[^.]*\."
+                    matches = re.findall(pattern, full_text, re.IGNORECASE)
+                    if matches:
+                        sections['achievements'] = ' '.join(matches)
+                        break
+        
         return sections
     
     def extract_entities(self, text):
@@ -248,7 +319,16 @@ class ResumeAnalyzer:
         for section, data in metrics['sections'].items():
             section_recs = []
             
+            # Only recommend adding a section if it's truly missing
+            # Skip certain checks if we've already identified the content elsewhere
             if not data['present']:
+                # Additional check for projects section
+                if section == 'projects' and any('github' in s.lower() for s in sections.values()):
+                    continue
+                # Additional check for achievements section
+                if section == 'achievements' and any('ranked' in s.lower() or 'award' in s.lower() or 'recognition' in s.lower() for s in sections.values()):
+                    continue
+                    
                 section_recs.append(f"Add a {section.replace('_', ' ').title()} section to your resume.")
             elif data['word_count'] < 30 and section not in ['contact', 'languages']:
                 section_recs.append(f"Expand your {section.replace('_', ' ').title()} section with more details.")
@@ -303,8 +383,14 @@ class ResumeAnalyzer:
         # Preprocess text
         processed_text = self.preprocess_text(raw_text)
         
+        # Debug raw text extraction
+        print("PDF Text (First 200 chars):", raw_text[:200])
+        
         # Identify sections
         sections = self.identify_sections(raw_text)
+        
+        # Debug sections found
+        print("Sections found:", list(sections.keys()))
         
         # Extract entities
         entities = self.extract_entities(processed_text)
@@ -378,3 +464,47 @@ class ResumeAnalyzer:
         
         response["recommendations"] = all_recs
         return response
+
+# Add a test function to help with debugging
+def test_resume_analyzer(pdf_path, target_industry=None):
+    analyzer = ResumeAnalyzer()
+    analysis = analyzer.analyze_resume(pdf_path, target_industry)
+    
+    print("\n--- RESUME ANALYSIS RESULTS ---")
+    print(f"Sections found: {analysis['sections_found']}")
+    print(f"Word count: {analysis['metrics']['word_count']}")
+    print(f"Action verbs: {len(analysis['metrics']['action_verbs']['verbs'])}")
+    print(f"Weak phrases: {len(analysis['metrics']['weak_phrases']['phrases'])}")
+    
+    print("\n--- RECOMMENDATIONS ---")
+    if analysis['recommendations']['overall']:
+        print("Overall:")
+        for rec in analysis['recommendations']['overall']:
+            print(f"- {rec}")
+    
+    if analysis['recommendations']['sections']:
+        print("\nSection-specific:")
+        for section, recs in analysis['recommendations']['sections'].items():
+            print(f"{section.replace('_', ' ').title()}:")
+            for rec in recs:
+                print(f"- {rec}")
+    
+    if analysis['recommendations']['language_use']:
+        print("\nLanguage use:")
+        for rec in analysis['recommendations']['language_use']:
+            print(f"- {rec}")
+    
+    if analysis['recommendations']['industry_alignment']:
+        print("\nIndustry alignment:")
+        for rec in analysis['recommendations']['industry_alignment']:
+            print(f"- {rec}")
+    
+    print("\n--- INDUSTRY KEYWORDS ---")
+    for industry, keywords in analysis['industry_keywords'].items():
+        print(f"{industry}: {keywords}")
+    
+    return analysis
+
+# Example usage:
+if __name__ == "__main__":
+    test_resume_analyzer("example_resume.pdf", "software_development")
