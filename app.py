@@ -7,7 +7,11 @@ from resume_analyzer import ResumeAnalyzer
 app = Flask(__name__)
 
 # Allow only the specific frontend origin
-CORS(app, resources={r"/*": {"origins": "https://campusconnectkrmu.onrender.com"}})
+CORS(app, resources={r"/*": {"origins": [
+    "https://campusconnectkrmu.onrender.com",
+    "http://localhost:5173"
+]}})
+
 
 analyzer = ResumeAnalyzer()
 
