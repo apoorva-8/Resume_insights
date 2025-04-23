@@ -10,7 +10,7 @@ from flask_cors import CORS
 # Allow only the specific frontend origin
 
 app = Flask(__name__)
-CORS(app, resources={r"/analyze": {"origins": "https://cdc.soet-krmu.com"}})
+CORS(app, origins=["https://cdc.soet-krmu.com"], supports_credentials=True)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
 
