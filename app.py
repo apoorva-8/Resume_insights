@@ -10,13 +10,9 @@ from flask_cors import CORS
 # Allow only the specific frontend origin
 
 app = Flask(__name__)
+CORS(app, resources={r"/analyze": {"origins": "https://cdc.soet-krmu.com"}})
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
-CORS(app, resources={r"/*": {"origins": [
-    "https://campusconnectkrmu.onrender.com",
-    "http://localhost:5173",
-    "http://127.0.0.1:5500",
-    "https://cdc.soet-krmu.com/"  
-]}})
+
 
 # Ensure upload directory exists
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
