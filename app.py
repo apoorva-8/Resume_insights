@@ -14,7 +14,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 CORS(app, resources={r"/*": {"origins": [
     "https://campusconnectkrmu.onrender.com",
     "http://localhost:5173",
-    "http://127.0.0.1:5500"  
+    "http://127.0.0.1:5500",
+    "https://cdc.soet-krmu.com/"  
 ]}})
 
 # Ensure upload directory exists
